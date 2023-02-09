@@ -5,14 +5,12 @@ using LinearAlgebra
 using ProgressMeter
 using Statistics
 
-mutable struct SliceExploreArguments
-    filename::String
-    type::Type
-    dims::Array{Int}
+mutable struct SliceExploreArguments{T,N}
+    data::Array{T,N}
     mode::String
     args::Dict{String,Any}
 end
-SliceExploreArguments() = SliceExploreArguments("", Float32, [], "slice", Dict())
+SliceExploreArguments{T, N}() where {T,N} = SliceExploreArguments{T,N}(Array{T,N}(undef, ones(Int,N)...),"slice", Dict())
 
 function slice_explorer(args::SliceExploreArguments)
     if args.mode == "slice"
@@ -25,17 +23,15 @@ function slice_explorer(args::SliceExploreArguments)
 end
 
 function vis_explorer(args::SliceExploreArguments)
-    data = Array{args.type}(undef, args.dims...)
-    read!(args.filename, data)
-    n_slices = args.dims[end]
-    min,max = extrema(data)
+    n_slices = size(args.data)[end]
+    min,max = extrema(args.data)
     fig = Figure()
-    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,args.dims[end]/2))
+    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,size(args.data)[end]/2))
     slice = lift(s.value) do v
-        data[:,:, v]
+        args.data[:,:, v]
     end
     slice_vec = lift(s.value) do v
-        vec(data[:,:, v])
+        vec(args.data[:,:, v])
     end
     hist_title = lift(s.value) do v
         "Histogram slice $v"
@@ -64,25 +60,23 @@ end
 
 function svd_explorer(args::SliceExploreArguments)
     fig = Figure()
-    data = Array{args.type}(undef, args.dims...)
-    read!(args.filename, data)
-    n_slices = args.dims[end]
+    n_slices = size(args.data)[end]
 
-    (svd_min, svd_max) = extrema(svd(data[:,:,1]).S) 
+    (svd_min, svd_max) = extrema(svd(args.data[:,:,1]).S) 
     @showprogress for i = 2:n_slices
-        (slice_svd_min, slice_svd_max) = extrema(svd(data[:,:,i]).S) 
+        (slice_svd_min, slice_svd_max) = extrema(svd(args.data[:,:,i]).S) 
         svd_min = min(slice_svd_min, svd_min)
         svd_max = max(slice_svd_max, svd_max)
     end
     
 
 
-    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,args.dims[end]/2))
+    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,size(args.data)[end]/2))
     slice = lift(s.value) do v
-        data[:,:, v]
+        args.data[:,:, v]
     end
     slice_vec = lift(s.value) do v
-        svd(data[:,:, v]).S
+        svd(args.data[:,:, v]).S
     end
     svd_title = lift(s.value) do v
         "SVD slice $v"
@@ -110,27 +104,25 @@ function svd_explorer(args::SliceExploreArguments)
 end
 
 function svdparslice_explorer(args::SliceExploreArguments)
-    data = Array{args.type}(undef, args.dims...)
-    read!(args.filename, data)
-    n_slices = args.dims[end]
-    min,max = extrema(data)
+    n_slices = size(args.data)[end]
+    min,max = extrema(args.data)
     fig = Figure()
-    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,args.dims[end]/2))
+    s = Slider(fig[2,1:2], range=1:1:n_slices, startvalue=round(Int,size(args.data)[end]/2))
     slice = lift(s.value) do v
-        data[:,:, v]
+        args.data[:,:, v]
     end
     slice_vec = lift(s.value) do v
-        slice = data[:,:, v]
-        μ = mean(slice; dims=1)
-        σ = mean(slice; dims=1)
+        datslice = args.data[:,:, v]
+        μ = mean(datslice; dims=1)
+        σ = mean(datslice; dims=1)
         if any(σ .==  0)
-            return zero(size(slice,1))
+            return zero(size(datslice,1))
         end
-        sp = (slice.-μ)./σ
+        sp = (datslice.-μ)./σ
         tiles = []
-        tile_size=get(args.args, "tile_size", round(Int, sqrt(size(slice, 1))))
-        for i in collect(Int,1:size(slice,1)/tile_size)
-            for j in collect(Int, 1:size(slice,2)/tile_size)
+        tile_size=get(args.args, "tile_size", round(Int, sqrt(size(datslice, 1))))
+        for i in collect(Int,1:size(datslice,1)/tile_size)
+            for j in collect(Int, 1:size(datslice,2)/tile_size)
                 push!(tiles, sp[i:i+(tile_size-1), j:j+(tile_size-1)])
             end
         end
@@ -158,6 +150,13 @@ function svdparslice_explorer(args::SliceExploreArguments)
         end
     end
     fig
+end
+
+for type in [(SliceExploreArguments{Float32,3},), (SliceExploreArguments{Float64,3},)]
+    precompile(slice_explorer, type)
+    precompile(svdparslice_explorer, type)
+    precompile(vis_explorer, type)
+    precompile(svd_explorer, type)
 end
 
 

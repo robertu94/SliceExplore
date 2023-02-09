@@ -1,26 +1,33 @@
 using SliceExplore
 using Getopt
 function parse_args()::SliceExploreArguments
-    args = SliceExploreArguments()
+    mode = "slice"
+    dims = Vector{Int}()
+    datatype = Float32
+    filename = ""
     for (opt,arg) in getopt(ARGS, "i:d:t:m:")
         if opt == "-i"
-            args.filename = arg
+            filename = arg
         elseif opt =="-d"
-            push!(args.dims, parse(Int,arg))
+            push!(dims, parse(UInt64,arg))
         elseif opt =="-t"
             if arg == "float"
-                args.type = Float32
+                datatype = Float32
             elseif arg == "double"
-                args.type = Float64
+                datatype = Float64
             end
         elseif opt =="-m"
-            args.mode = arg
+            mode = arg
         else
         end
     end
+    @show mode, dims, datatype, filename
+    args = SliceExploreArguments{datatype, length(dims)}()
+    args.data = Array{datatype}(undef, dims...)
+    args.mode = mode
+    read!(filename, args.data)
     args
 end
 
 args = parse_args()
-print(args)
 wait(display(slice_explorer(args)))
