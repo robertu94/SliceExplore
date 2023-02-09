@@ -11,6 +11,7 @@ mutable struct SliceExploreArguments{T,N}
     args::Dict{String,Any}
 end
 SliceExploreArguments{T, N}() where {T,N} = SliceExploreArguments{T,N}(Array{T,N}(undef, ones(Int,N)...),"slice", Dict())
+SliceExploreArguments(data::Array{T,N}) where {T,N} = SliceExploreArguments{T,N}(data, "slice", Dict())
 
 function slice_explorer(args::SliceExploreArguments)
     if args.mode == "slice"

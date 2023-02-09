@@ -1,11 +1,12 @@
 name = "SliceExplore"
 uuid = "d5758ed4-18bc-455f-b34d-3d919e0b5915"
 authors = ["Robert Underwood <runderwood@anl.gov>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 Getopt = "31df374a-5bce-54dc-914a-f687be069de8"
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
